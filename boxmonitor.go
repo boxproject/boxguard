@@ -74,9 +74,6 @@ func init() {
 	}
 	stdlog.Println("toml config info-->", string(buf))
 
-	if config.GlbCfg.EnablePfctl {
-		pfctlmgr.InitPfctl()
-	}
 
 	config.GlbCfg.InitData()
 
@@ -139,6 +136,11 @@ func (service *Service) Manage() (string, error) {
 		stdlog.Printf("----%ds----\n", count)
 	}
 	stdlog.Println("----monitor progme start-----")
+
+	if config.GlbCfg.EnablePfctl {
+		pfctlmgr.InitPfctl()
+	}
+
 	go func() {
 		for {
 			scanproc.GetProcessList(false)

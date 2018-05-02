@@ -24,7 +24,7 @@ var stdlog *log.Logger
 
 func InitPfctl() {
 	stdlog = log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	pfconfPath := "./etc/pf.conf"
+	pfconfPath := "./pf.conf"
 	_, err := os.Open(pfconfPath)
 	if err != nil {
 		log.Fatal(err)

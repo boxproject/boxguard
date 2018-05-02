@@ -16,6 +16,7 @@ build:
 	mkdir -p build/bin
 	go build -o build/bin/boxgd
 	cp config.toml build/bin
+	cp etc/pf.conf build/bin
 
 clean:
 	rm -rf build
