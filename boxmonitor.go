@@ -73,10 +73,6 @@ func init() {
 		log.Fatal(err)
 	}
 	stdlog.Println("toml config info-->", string(buf))
-
-
-	config.GlbCfg.InitData()
-
 }
 
 //get current login user count
@@ -136,6 +132,8 @@ func (service *Service) Manage() (string, error) {
 		stdlog.Printf("----%ds----\n", count)
 	}
 	stdlog.Println("----monitor progme start-----")
+
+	config.GlbCfg.InitData()
 
 	if config.GlbCfg.EnablePfctl {
 		pfctlmgr.InitPfctl()
