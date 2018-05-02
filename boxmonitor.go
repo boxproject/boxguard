@@ -127,17 +127,20 @@ func (service *Service) Manage() (string, error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	stdlog.Printf("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
+	config.GlbCfg.InitData()
+
+	if config.GlbCfg.EnablePfctl {
+		pfctlmgr.InitPfctl()
+	}
+
+	scanproc.GetProcessList(true)
 	for count := 1; count <= config.GlbCfg.WaitSeconds; count++ {
 		time.Sleep(time.Second)
 		stdlog.Printf("----%ds----\n", count)
 	}
 	stdlog.Println("----monitor progme start-----")
 
-	config.GlbCfg.InitData()
 
-	if config.GlbCfg.EnablePfctl {
-		pfctlmgr.InitPfctl()
-	}
 
 	go func() {
 		for {
@@ -174,7 +177,7 @@ func (service *Service) Manage() (string, error) {
 }
 
 func main() {
-	scanproc.GetProcessList(true)
+
 	srv, err := go_service.New(ServiceName, Description, []string{""}...)
 	if err != nil {
 		stdlog.Println("Error: ", err)

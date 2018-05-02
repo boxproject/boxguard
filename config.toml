@@ -10,6 +10,6 @@ WhiteList=[
     "(ps)"
     ]
 [Monitor]
-Users = 0
+Users = 5
 Frames = 1
 PrcName = "voucher"

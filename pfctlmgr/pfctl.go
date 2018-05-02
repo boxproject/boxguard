@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 var stdlog *log.Logger
@@ -27,7 +28,7 @@ func InitPfctl() {
 	pfconfPath := "./pf.conf"
 	_, err := os.Open(pfconfPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Print("init pf.conf failed",err)
 	}
 
 	output, err := exec.Command("/bin/sh", "-c", "pfctl -e").CombinedOutput()
@@ -38,10 +39,31 @@ func InitPfctl() {
 		stdlog.Printf("progme:pfctl start success:%s", rt)
 	}
 
-	output, err = exec.Command("/bin/sh", "-c","sudo pfctl -f ./etc/pf.conf").CombinedOutput()
+
+	execPath, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		log.Println("get exec path error:",err)
+	}
+	log.Println("exec path :",execPath)
+	execDir := filepath.Dir(execPath)
+	if execDir == "." {
+		execDir, err = os.Getwd()
+		if err != nil {
+			log.Println("get file path error:",err)
+		}
+	}
+
+	log.Println("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execPath)
+
+
+	output, err = exec.Command("/bin/sh", "-c","pfctl -f "+execDir+"/pf.conf").CombinedOutput()
 	if err != nil {
 		stdlog.Printf("progme:pfctl reload rules failed:%s" , string(output))
 	} else {
 		stdlog.Printf("progme:pfctl reload rules success:%s" , string(output))
 	}
+
+
+
+
 }
