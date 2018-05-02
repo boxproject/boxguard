@@ -44,7 +44,7 @@ func init() {
 
 func writeToFile(execPath,pid string,){
 	//f,err := os.OpenFile("./build/bin/proclog_snap",os.O_WRONLY|os.O_APPEND|os.O_CREATE,0666)
-	f,err := os.OpenFile("./build/bin/proclog_snap",os.O_WRONLY|os.O_APPEND|os.O_CREATE,0666)
+	f,err := os.OpenFile("./proclog_snap",os.O_WRONLY|os.O_APPEND|os.O_CREATE,0666)
 	if err != nil {
 		log.Println("err-->",err)
 	}
