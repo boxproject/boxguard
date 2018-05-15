@@ -1,0 +1,17 @@
+WaitSeconds = 30
+EnablePfctl=true
+EnableProcGuard=true
+WhiteList=[
+    "/bin/bash",
+    "-bash",
+    "rudy",
+    "/Applications/iTerm.app/Contents/MacOS/iTerm2 --server login -fp rudy",
+    "aslmanager",
+    "(ps)",
+    "/usr/bin/sudo"
+    ]
+[Monitor]
+Users = 0
+Frames = 1
+PrcName = "voucher"
+AllowUser = "rudy"
