@@ -41,14 +41,11 @@ var (
 	ServiceName  = "boxgd"
 	Description  = "boxgd-Service"
 	userLimit      = -1
-	monitorDP      = 666 * time.Millisecond
+	monitorDP      = 1000 * time.Millisecond
 	gService    Service
 )
 
 func init() {
-	
-
-
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		Logger.Fatal(err)
