@@ -29,6 +29,7 @@ import (
 	"syscall"
 	"time"
 	"strconv"
+	Logger "log"
 )
 
 type Service struct {
@@ -50,11 +51,11 @@ func init() {
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		scanproc.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	if _, err := toml.DecodeFile(dir+"/config.toml", &config.GlbCfg); err != nil {
-		scanproc.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	MonitorPrc = config.GlbCfg.Monitor.PrcName
@@ -64,14 +65,14 @@ func init() {
 
 	buf, err := json.Marshal(config.GlbCfg)
 	if err != nil {
-		scanproc.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
-	scanproc.Logger.Println("toml config info-->", string(buf))
+	Logger.Println("toml config info-->", string(buf))
 
 	scanproc.SelfPid = strconv.Itoa(os.Getpid())
-	scanproc.Logger.Println("SelfPid------------------------------->", scanproc.SelfPid)
+	Logger.Println("SelfPid------------------------------->", scanproc.SelfPid)
 	scanproc.ProcMap = make(map[string][]string)
-	scanproc.Logger.Println("init success")
+	Logger.Println("init success")
 }
 
 //get current login user count
@@ -87,7 +88,7 @@ func getUserStat() (num int) {
 		}
 
 		if config.GlbCfg.AllowUser==fields[0] {
-			scanproc.Logger.Printf("%s_%s is working",fields[0],fields[1])
+			Logger.Printf("%s_%s is working",fields[0],fields[1])
 			continue
 		}
 
@@ -100,9 +101,9 @@ func getUserStat() (num int) {
 func killPro() {
 	output, err := exec.Command("killall", "-SIGINT", MonitorPrc).CombinedOutput()
 	if err != nil {
-		scanproc.Logger.Printf("progme:voucher killed failed:" + string(output))
+		Logger.Printf("progme:voucher killed failed:" + string(output))
 	} else {
-		scanproc.Logger.Printf("progme:voucher killed succeed:" + string(output))
+		Logger.Printf("progme:voucher killed succeed:" + string(output))
 	}
 }
 
@@ -131,7 +132,7 @@ func (service *Service) Manage() (string, error) {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-	scanproc.Logger.Printf("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
+	Logger.Printf("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
 	config.GlbCfg.InitData()
 
 	if config.GlbCfg.EnablePfctl {
@@ -140,12 +141,12 @@ func (service *Service) Manage() (string, error) {
 
 	for count := 1; count <= config.GlbCfg.WaitSeconds; count++ {
 		time.Sleep(time.Second)
-		scanproc.Logger.Printf("----%ds----\n", count)
+		Logger.Printf("----%ds----\n", count)
 	}
 
 	scanproc.GetProcessList(true)
 
-	scanproc.Logger.Println("----monitor progme start-----")
+	Logger.Println("----monitor progme start-----")
 
 	go func() {
 		for {
@@ -165,9 +166,9 @@ func (service *Service) Manage() (string, error) {
 			case <-timerListen.C:
 				if userLimit >= 0 {
 					userCount := getUserStat()
-					scanproc.Logger.Println("cur valid usr cnt -->", userCount)
+					Logger.Println("cur valid usr cnt -->", userCount)
 					if userCount > userLimit {
-						scanproc.Logger.Printf("----%d users login,begin to kill progme----\n", userCount)
+						Logger.Printf("----%d users login,begin to kill progme----\n", userCount)
 						//kill progme
 						killPro()
 						gService.Stop()
@@ -184,9 +185,9 @@ func (service *Service) Manage() (string, error) {
 	for {
 		select {
 		case killSignal := <-interrupt:
-			scanproc.Logger.Println("Got signal:", killSignal)
+			Logger.Println("Got signal:", killSignal)
 			if killSignal == syscall.SIGINT {
-				scanproc.Logger.Printf("interrupted by system signal,%s  was killed\n", ServiceName)
+				Logger.Printf("interrupted by system signal,%s  was killed\n", ServiceName)
 				os.Exit(0)
 			}
 		}
@@ -197,7 +198,7 @@ func main() {
 
 	srv, err := go_service.New(ServiceName, Description, []string{""}...)
 	if err != nil {
-		scanproc.Logger.Println("Error: ", err)
+		Logger.Println("Error: ", err)
 		os.Exit(1)
 	}
 
@@ -205,8 +206,8 @@ func main() {
 	gService = *service
 	status, err := service.Manage()
 	if err != nil {
-		scanproc.Logger.Println(status, "\nError: ", err)
+		Logger.Println(status, "\nError: ", err)
 		os.Exit(1)
 	}
-	scanproc.Logger.Println(status)
+	Logger.Println(status)
 }

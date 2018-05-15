@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"github.com/boxproject/boxguard/config"
 	"io"
-	"log"
+	Logger "log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -32,7 +32,6 @@ var (
 	dot               = []byte{46}
 	ProcMap map[string][]string
 	SelfPid string
-	Logger  *log.Logger
 )
 
 func writeToFile(execPath, pid string) {

@@ -16,7 +16,7 @@
 package config
 
 import (
-	"github.com/boxproject/boxguard/scanproc"
+	Logger "log"
 )
 
 
@@ -39,12 +39,12 @@ func (glbcfg *GlobalConfig) InitData() {
 	if !GlbCfg.EnableProcGuard {
 		return
 	}
-	scanproc.Logger.Println("Global config init begin")
+	Logger.Println("Global config init begin")
 	glbcfg.WhiteMap = make(map[string]bool)
 	for _, proc := range glbcfg.WhiteList {
 		glbcfg.WhiteMap[proc] = true
 	}
-	scanproc.Logger.Printf("Global config init end,white proc data---->%v",glbcfg.WhiteMap)
+	Logger.Printf("Global config init end,white proc data---->%v",glbcfg.WhiteMap)
 }
 
 func (glbcfg *GlobalConfig) InWhite(fullPath string) bool {

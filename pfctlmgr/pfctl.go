@@ -15,11 +15,10 @@
 package pfctlmgr
 
 import (
-	"log"
+	Logger "log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"github.com/boxproject/boxguard/scanproc"
 )
 
 
@@ -28,39 +27,39 @@ func InitPfctl() {
 	pfconfPath := "./pf.conf"
 	_, err := os.Open(pfconfPath)
 	if err != nil {
-		log.Print("init pf.conf failed",err)
+		Logger.Print("init pf.conf failed",err)
 	}
 
 	output, err := exec.Command("/bin/sh", "-c", "pfctl -e").CombinedOutput()
 	rt := string(output)
 	if err != nil {
-		scanproc.Logger.Printf("progme:pfctl start failed:%s", rt)
+		Logger.Printf("progme:pfctl start failed:%s", rt)
 	} else {
-		scanproc.Logger.Printf("progme:pfctl start success:%s", rt)
+		Logger.Printf("progme:pfctl start success:%s", rt)
 	}
 
 
 	execPath, err := exec.LookPath(os.Args[0])
 	if err != nil {
-		log.Println("get exec path error:",err)
+		Logger.Println("get exec path error:",err)
 	}
-	log.Println("exec path :",execPath)
+	Logger.Println("exec path :",execPath)
 	execDir := filepath.Dir(execPath)
 	if execDir == "." {
 		execDir, err = os.Getwd()
 		if err != nil {
-			log.Println("get file path error:",err)
+			Logger.Println("get file path error:",err)
 		}
 	}
 
-	log.Println("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execPath)
+	Logger.Println("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execPath)
 
 
 	output, err = exec.Command("/bin/sh", "-c","pfctl -f "+execDir+"/pf.conf").CombinedOutput()
 	if err != nil {
-		scanproc.Logger.Printf("progme:pfctl reload rules failed:%s" , string(output))
+		Logger.Printf("progme:pfctl reload rules failed:%s" , string(output))
 	} else {
-		scanproc.Logger.Printf("progme:pfctl reload rules success:%s" , string(output))
+		Logger.Printf("progme:pfctl reload rules success:%s" , string(output))
 	}
 
 
