@@ -9,7 +9,12 @@ WhiteList=[
     "/Applications/iTerm.app/Contents/MacOS/iTerm2 --server login -fp rudy",
     "aslmanager",
     "(ps)",
-    "/usr/bin/sudo"
+    "/usr/bin/sudo",
+    "-A",
+    "ps -A",
+    "autofsd",
+    "who",
+    "(who)"
     ]
 [Monitor]
 Users = 0
