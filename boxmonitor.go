@@ -46,7 +46,7 @@ var (
 
 func init() {
 	
-	
+
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {

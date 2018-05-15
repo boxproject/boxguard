@@ -15,7 +15,10 @@
 
 package config
 
-import "github.com/boxproject/boxguard/scanproc"
+import (
+	"github.com/boxproject/boxguard/scanproc"
+)
+
 
 var(
 	GlbCfg      GlobalConfig
