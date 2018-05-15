@@ -23,30 +23,31 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
 	"github.com/boxproject/boxguard/config"
 )
 
 var (
-	dot     = []byte{46}
-	procMap map[string][]string
+	dot               = []byte{46}
+	ProcMap map[string][]string
 	SelfPid string
+	StLog   *log.Logger
 )
 
 
-func init() {
-	SelfPid = strconv.Itoa(os.Getpid())
-	log.Println("SelfPid------------------------------->", SelfPid)
-	procMap = make(map[string][]string)
-	log.Println("init success")
-}
+//func init() {
+//	//StLog = log.New(os.Stdout, "", log.Ldate|log.Ltime)
+//	SelfPid = strconv.Itoa(os.Getpid())
+//	StLog.Println("SelfPid------------------------------->", SelfPid)
+//	ProcMap = make(map[string][]string)
+//	StLog.Println("init success")
+//}
 
 func writeToFile(execPath,pid string,){
 	//f,err := os.OpenFile("./build/bin/proclog_snap",os.O_WRONLY|os.O_APPEND|os.O_CREATE,0666)
 	f,err := os.OpenFile("./proclog_snap",os.O_WRONLY|os.O_APPEND|os.O_CREATE,0666)
 	if err != nil {
-		log.Println("err-->",err)
+		StLog.Println("err-->",err)
 	}
 	defer f.Close()
 	f.WriteString(pid)
@@ -57,40 +58,49 @@ func writeToFile(execPath,pid string,){
 
 
 func GetProcessList(init bool) {
+
+
 	if !config.GlbCfg.EnableProcGuard {
 		return
 	}
-	cmd := exec.Command("ps", "-A")
-	out, err := cmd.StdoutPipe()
+	cmd_psa := exec.Command("ps", "-A")
+	out, err := cmd_psa.StdoutPipe()
+
+	defer out.Close()
+
 	if err != nil {
-		log.Printf("STD out pipe failed. cause: %v\n", err)
+		StLog.Printf("STD out pipe failed. cause: %v\n", err)
 		return
 	}
 
-	if err := cmd.Start(); err != nil {
-		log.Printf("run system command failed. cause: %v\n", err)
+
+	if err := cmd_psa.Start(); err != nil {
+		StLog.Printf("run system command failed. cause: %v\n", err)
 		return
 	}
 
-	reader := bufio.NewReader(out)
+	readerout := bufio.NewReader(out)
+
 	reg, err := regexp.Compile("(\\d+).*?(\\.?/.*?)$")
 	if err != nil {
-		log.Printf("%v\n", err)
+		StLog.Printf("%v\n", err)
 		return
 	}
 
-	if _, _, err = reader.ReadLine(); err != nil {
+
+
+	if _, _, err = readerout.ReadLine(); err != nil {
 		return
 	}
 
 	for {
-		line, _, err := reader.ReadLine()
+		line, _, err := readerout.ReadLine()
 		if err != nil {
 			if io.EOF == err {
-				fmt.Println("current proc count:", len(procMap))
+				fmt.Println("current proc count:", len(ProcMap))
 				return
 			}
-			log.Printf("read line failed. cause: %v\n", err)
+			StLog.Printf("read line failed. cause: %v\n", err)
 			return
 		}
 
@@ -120,18 +130,18 @@ func GetProcessList(init bool) {
 					}
 
 					if init {
-						log.Println("===============init proc-------->", exePathStr)
+						StLog.Println("===============init proc-------->", exePathStr)
 					}
 
 					//check if the proc already in memory
-					subPids, ok := procMap[exePathStr]
+					subPids, ok := ProcMap[exePathStr]
 
 					//add it to memory
 					subPids = append(subPids, pidstr)
 
 					if !ok {
 						if init {
-							procMap[exePathStr] = subPids
+							ProcMap[exePathStr] = subPids
 						} else {
 							doKill(exePathStr, pidstr)
 						}
@@ -147,7 +157,6 @@ func GetProcessList(init bool) {
 
 			logstr := fields[lenth-1]
 
-			log.Printf("no match --> %s,log=%s",pidstr,logstr)
 
 			doKill(logstr,pidstr)
 		}
@@ -159,15 +168,16 @@ func GetProcessList(init bool) {
 func doKill(exePathStr string, pidstr string) {
 
 	if SelfPid != pidstr && !config.GlbCfg.InWhite(exePathStr) {
-		log.Println("====do kill==========for not in memory--------》", exePathStr)
+		StLog.Println("====do kill==========for not in memory--------》", exePathStr)
 		cmdstr := "kill -9 " + pidstr
 		killbuf, err := exec.Command("/bin/sh", "-c", cmdstr).CombinedOutput()
+
 		killResult := string(killbuf)
 		writeToFile(exePathStr,pidstr)
 		if err != nil {
-			log.Println("kill process ", exePathStr, " failed,pid=", pidstr, ",exec out:", killResult)
+			StLog.Println("kill process ", exePathStr, " failed,pid=", pidstr, ",exec out:", killResult)
 		}
-		log.Println("kill process ", exePathStr, " success,pid=", pidstr, ",exec out:", killResult)
+		StLog.Println("kill process ", exePathStr, " success,pid=", pidstr, ",exec out:", killResult)
 	}
 }
 
@@ -182,7 +192,10 @@ func GetFullPath(pid string) (string, error) {
 		return "", err
 	}
 
+
+
 	buf := bytes.NewBuffer(result)
+
 	reader := bufio.NewReader(buf)
 
 	for {
@@ -191,7 +204,7 @@ func GetFullPath(pid string) (string, error) {
 			if io.EOF == err {
 				return "", err
 			}
-			log.Printf("read line failed. cause: %v\n", err)
+			StLog.Printf("read line failed. cause: %v\n", err)
 			return "", err
 		}
 		return string(line), nil

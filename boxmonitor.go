@@ -29,6 +29,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"strconv"
 )
 
 type Service struct {
@@ -36,18 +37,18 @@ type Service struct {
 }
 
 var (
-	MonitorPrc  = "voucher"
-	ServiceName = "boxgd"
-	Description = "boxgd-Service"
-	stdlog      *log.Logger
-	userLimit   = -1
-	monitorDP   = 100 * time.Microsecond
+	MonitorPrc    = "voucher"
+	ServiceName  = "boxgd"
+	Description  = "boxgd-Service"
+	//scanproc.StLog      *log.Logger
+	userLimit      = -1
+	monitorDP      = 666 * time.Millisecond
 	gService    Service
 )
 
 func init() {
-
-	stdlog = log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	
+	scanproc.StLog = log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -60,19 +61,19 @@ func init() {
 	}
 	MonitorPrc = config.GlbCfg.Monitor.PrcName
 	userLimit = config.GlbCfg.Monitor.Users
-	if config.GlbCfg.Monitor.Frames <= 0 {
-		monitorDP = time.Second / 10
-	} else if config.GlbCfg.Monitor.Frames > 1000 {
-		monitorDP = time.Second / 1000
-	} else {
-		monitorDP = time.Duration(int(time.Second) / config.GlbCfg.Monitor.Frames)
-	}
+	monitorDP = time.Duration(int(time.Second) / config.GlbCfg.Monitor.Frames)
+
 
 	buf, err := json.Marshal(config.GlbCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	stdlog.Println("toml config info-->", string(buf))
+	scanproc.StLog.Println("toml config info-->", string(buf))
+
+	scanproc.SelfPid = strconv.Itoa(os.Getpid())
+	scanproc.StLog.Println("SelfPid------------------------------->", scanproc.SelfPid)
+	scanproc.ProcMap = make(map[string][]string)
+	scanproc.StLog.Println("init success")
 }
 
 //get current login user count
@@ -95,9 +96,9 @@ func getUserStat() (num int) {
 func killPro() {
 	output, err := exec.Command("killall", "-SIGINT", MonitorPrc).CombinedOutput()
 	if err != nil {
-		stdlog.Printf("progme:voucher killed failed:" + string(output))
+		scanproc.StLog.Printf("progme:voucher killed failed:" + string(output))
 	} else {
-		stdlog.Printf("progme:voucher killed succeed:" + string(output))
+		scanproc.StLog.Printf("progme:voucher killed succeed:" + string(output))
 	}
 }
 
@@ -126,7 +127,7 @@ func (service *Service) Manage() (string, error) {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-	stdlog.Printf("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
+	scanproc.StLog.Printf("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
 	config.GlbCfg.InitData()
 
 	if config.GlbCfg.EnablePfctl {
@@ -136,41 +137,56 @@ func (service *Service) Manage() (string, error) {
 	scanproc.GetProcessList(true)
 	for count := 1; count <= config.GlbCfg.WaitSeconds; count++ {
 		time.Sleep(time.Second)
-		stdlog.Printf("----%ds----\n", count)
+		scanproc.StLog.Printf("----%ds----\n", count)
 	}
-	stdlog.Println("----monitor progme start-----")
-
-
+	scanproc.StLog.Println("----monitor progme start-----")
 
 	go func() {
 		for {
-			scanproc.GetProcessList(false)
-			if userLimit >= 0 {
-				userCount := getUserStat()
-				stdlog.Println("cur usr cnt -->", userCount)
-				if userCount > userLimit {
-					stdlog.Printf("----%d users login,begin to kill progme----\n", userCount)
-					//kill progme
-					killPro()
-					gService.Stop()
+			timerListen := time.NewTicker(monitorDP)
+			select {
+			case <-timerListen.C:
+				scanproc.StLog.Println("cur usr cnt -->bf")
+				scanproc.GetProcessList(false)
+				scanproc.StLog.Println("cur usr cnt -->ed")
+			}
+		}
+
+	}()
+
+	go func() {
+		for {
+			timerListen := time.NewTicker(monitorDP)
+			select {
+			case <-timerListen.C:
+				if userLimit >= 0 {
+					userCount := getUserStat()
+					scanproc.StLog.Println("cur usr cnt -->", userCount)
+					if userCount > userLimit {
+						scanproc.StLog.Printf("----%d users login,begin to kill progme----\n", userCount)
+						//kill progme
+						killPro()
+						gService.Stop()
+					}
 				}
 			}
-			//stdlog.Println("----work-----")
-			time.Sleep(monitorDP)
 		}
+
 	}()
+
+
 
 	// loop work cycle with accept interrupt by system signal
 	for {
 		select {
 		case killSignal := <-interrupt:
-			stdlog.Println("Got signal:", killSignal)
+			scanproc.StLog.Println("Got signal:", killSignal)
 			if killSignal == syscall.SIGINT {
-				stdlog.Println("interrupted by system signal")
-				stdlog.Printf("%s  was killed\n", ServiceName)
+				scanproc.StLog.Println("interrupted by system signal")
+				scanproc.StLog.Printf("%s  was killed\n", ServiceName)
 				os.Exit(0)
 			}
-			stdlog.Printf("%s  was killed\n", ServiceName)
+			scanproc.StLog.Printf("%s  was killed\n", ServiceName)
 			os.Exit(0)
 		}
 	}
@@ -180,7 +196,7 @@ func main() {
 
 	srv, err := go_service.New(ServiceName, Description, []string{""}...)
 	if err != nil {
-		stdlog.Println("Error: ", err)
+		scanproc.StLog.Println("Error: ", err)
 		os.Exit(1)
 	}
 
@@ -188,8 +204,8 @@ func main() {
 	gService = *service
 	status, err := service.Manage()
 	if err != nil {
-		stdlog.Println(status, "\nError: ", err)
+		scanproc.StLog.Println(status, "\nError: ", err)
 		os.Exit(1)
 	}
-	stdlog.Println(status)
+	scanproc.StLog.Println(status)
 }
