@@ -87,7 +87,7 @@ func getUserStat() (num int) {
 			continue
 		}
 
-		if config.GlbCfg.AllowUser==fields[0] {
+		if config.GlbCfg.AllowUser == fields[0] {
 			Logger.Printf("%s_%s is working",fields[0],fields[1])
 			continue
 		}

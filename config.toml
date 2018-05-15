@@ -1,6 +1,7 @@
 WaitSeconds = 30
 EnablePfctl=true
 EnableProcGuard=true
+AllowUser = "rudy"
 WhiteList=[
     "/bin/bash",
     "-bash",
@@ -14,4 +15,3 @@ WhiteList=[
 Users = 0
 Frames = 1
 PrcName = "voucher"
-AllowUser = "rudy"
