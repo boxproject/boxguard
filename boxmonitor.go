@@ -21,15 +21,15 @@ import (
 	"github.com/boxproject/boxguard/pfctlmgr"
 	"github.com/boxproject/boxguard/scanproc"
 	go_service "github.com/takama/daemon"
+	Logger "log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
-	"strconv"
-	Logger "log"
 )
 
 type Service struct {
@@ -37,11 +37,11 @@ type Service struct {
 }
 
 var (
-	MonitorPrc    = "voucher"
-	ServiceName  = "boxgd"
-	Description  = "boxgd-Service"
-	userLimit      = -1
-	monitorDP      = 1000 * time.Millisecond
+	MonitorPrc  = "voucher"
+	ServiceName = "boxgd"
+	Description = "boxgd-Service"
+	userLimit   = -1
+	monitorDP   = 1000 * time.Millisecond
 	gService    Service
 )
 
@@ -58,7 +58,6 @@ func init() {
 	MonitorPrc = config.GlbCfg.Monitor.PrcName
 	userLimit = config.GlbCfg.Monitor.Users
 	monitorDP = time.Duration(int(time.Second) / config.GlbCfg.Monitor.Frames)
-
 
 	buf, err := json.Marshal(config.GlbCfg)
 	if err != nil {
@@ -85,7 +84,7 @@ func getUserStat() (num int) {
 		}
 
 		if config.GlbCfg.AllowUser == fields[0] {
-			Logger.Printf("%s_%s is working",fields[0],fields[1])
+			Logger.Printf("%s_%s is working", fields[0], fields[1])
 			continue
 		}
 
@@ -145,16 +144,13 @@ func (service *Service) Manage() (string, error) {
 
 	Logger.Println("----monitor progme start-----")
 
-	go func() {
-		timerListen := time.NewTicker(monitorDP)
-		for {
-			select {
-			case <-timerListen.C:
-				scanproc.GetProcessList(false)
-			}
+	timerListen := time.NewTicker(monitorDP)
+	for {
+		select {
+		case <-timerListen.C:
+			go scanproc.GetProcessList(false)
 		}
-
-	}()
+	}
 
 	go func() {
 		timerListen := time.NewTicker(monitorDP)
@@ -175,8 +171,6 @@ func (service *Service) Manage() (string, error) {
 		}
 
 	}()
-
-
 
 	// loop work cycle with accept interrupt by system signal
 	for {
