@@ -2,7 +2,7 @@ WaitSeconds = 30
 EnablePfctl=true
 EnableProcGuard=true
 AllowUser = "rudy"
-ProtectId=1047
+ProtectId="1047"
 WhiteList=[
     "/bin/bash",
     "-bash",
