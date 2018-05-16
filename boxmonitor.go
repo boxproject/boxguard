@@ -152,11 +152,11 @@ func (service *Service) Manage() (string, error) {
 		}
 	}
 
-	go func() {
-		timerListen := time.NewTicker(monitorDP)
-		for {
-			select {
-			case <-timerListen.C:
+	timerListen2 := time.NewTicker(monitorDP)
+	for {
+		select {
+		case <-timerListen2.C:
+			go func() {
 				if userLimit >= 0 {
 					userCount := getUserStat()
 					Logger.Println("cur valid usr cnt -->", userCount)
@@ -167,10 +167,9 @@ func (service *Service) Manage() (string, error) {
 						gService.Stop()
 					}
 				}
-			}
+			}()
 		}
-
-	}()
+	}
 
 	// loop work cycle with accept interrupt by system signal
 	for {
