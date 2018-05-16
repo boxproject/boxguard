@@ -14,7 +14,9 @@ WhiteList=[
     "ps -A",
     "autofsd",
     "who",
-    "(who)"
+    "(who)",
+    "lsof",
+    "(ps)"
     ]
 [Monitor]
 Users = 0

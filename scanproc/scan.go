@@ -63,22 +63,13 @@ func GetProcessList(init bool) {
 
 	timebg := time.Now().UnixNano()
 
-	cmd_psa := exec.Command("ps", "-A")
-	out, err := cmd_psa.StdoutPipe()
+	cmd := exec.Command("/bin/sh", "-c", "ps -A")
 
-	defer out.Close()
+	result, err := cmd.Output()
 
-	if err != nil {
-		Logger.Printf("STD out pipe failed. cause: %v\n", err)
-		return
-	}
+	buf := bytes.NewBuffer(result)
 
-	if err := cmd_psa.Start(); err != nil {
-		Logger.Printf("run system command failed. cause: %v\n", err)
-		return
-	}
-
-	readerout := bufio.NewReader(out)
+	readerout := bufio.NewReader(buf)
 
 	reg, err := regexp.Compile("(\\d+).*?(\\.?/.*?)$")
 	if err != nil {
@@ -95,7 +86,7 @@ func GetProcessList(init bool) {
 		line, _, err := readerout.ReadLine()
 		if err != nil {
 			if io.EOF == err {
-				Logger.Printf("current proc count:", len(ProcMap))
+				Logger.Printf("current proc count:%d", len(ProcMap))
 				return
 			}
 			Logger.Printf("read line failed. cause: %v\n", err)
@@ -133,19 +124,8 @@ func GetProcessList(init bool) {
 						Logger.Println("===============init proc-------->", exePathStr)
 					}
 
-					//check if the proc already in memory
-					subPids, ok := ProcMap[exePathStr]
-
-					//add it to memory
-					subPids = append(subPids, pidstr)
-
-					if !ok {
-						if init {
-							ProcMap[exePathStr] = subPids
-						} else {
-							doKill(exePathStr, pidstr)
-						}
-					}
+					//check if the proc already in memory,if not in kill
+					toggle(exePathStr, pidstr, init)
 				}
 			}
 		} else {
@@ -157,7 +137,7 @@ func GetProcessList(init bool) {
 
 			logstr := fields[lenth-1]
 
-			doKill(logstr, pidstr)
+			toggle(logstr,pidstr,init)
 		}
 
 	}
@@ -209,4 +189,17 @@ func GetFullPath(pid string) (string, error) {
 		return string(line), nil
 	}
 
+}
+
+func toggle(exePathStr string, pidstr string, init bool) {
+	subPids, ok := ProcMap[exePathStr]
+	//add it to memory
+	subPids = append(subPids, pidstr)
+	if !ok {
+		if init {
+			ProcMap[exePathStr] = subPids
+		} else {
+			doKill(exePathStr, pidstr)
+		}
+	}
 }

@@ -146,8 +146,8 @@ func (service *Service) Manage() (string, error) {
 	Logger.Println("----monitor progme start-----")
 
 	go func() {
+		timerListen := time.NewTicker(monitorDP)
 		for {
-			timerListen := time.NewTicker(monitorDP)
 			select {
 			case <-timerListen.C:
 				scanproc.GetProcessList(false)
@@ -157,8 +157,8 @@ func (service *Service) Manage() (string, error) {
 	}()
 
 	go func() {
+		timerListen := time.NewTicker(monitorDP)
 		for {
-			timerListen := time.NewTicker(monitorDP)
 			select {
 			case <-timerListen.C:
 				if userLimit >= 0 {
