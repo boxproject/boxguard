@@ -60,7 +60,6 @@ func GetProcessList(init bool) {
 		Logger.Println("get process list again••••••••••••••")
 	}
 
-
 	timebg := time.Now().UnixNano()
 
 	cmd := exec.Command("/bin/sh", "-c", "ps -A")
@@ -86,7 +85,10 @@ func GetProcessList(init bool) {
 		line, _, err := readerout.ReadLine()
 		if err != nil {
 			if io.EOF == err {
-				Logger.Printf("current proc count:%d", len(ProcMap))
+				Logger.Printf("", )
+				timett := time.Now().UnixNano()-timebg
+
+				Logger.Printf("get process list end,current proc count:%d, cost  unix nano mills--> %v",len(ProcMap),timett)
 				return
 			}
 			Logger.Printf("read line failed. cause: %v\n", err)
@@ -145,11 +147,6 @@ func GetProcessList(init bool) {
 		}
 
 	}
-
-	timett := time.Now().UnixNano()-timebg
-
-	Logger.Printf("get process list end, cost  unix nano mills--> %v",timett)
-
 }
 
 func doKill(exePathStr string, pidstr string) {

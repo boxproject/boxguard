@@ -144,19 +144,21 @@ func (service *Service) Manage() (string, error) {
 
 	Logger.Println("----monitor progme start-----")
 
-	timerListen := time.NewTicker(monitorDP)
-	for {
-		select {
-		case <-timerListen.C:
-			go scanproc.GetProcessList(false)
+	go func() {
+		timerListen := time.NewTicker(monitorDP)
+		for {
+			select {
+			case <-timerListen.C:
+				go scanproc.GetProcessList(false)
+			}
 		}
-	}
+	}()
 
-	timerListen2 := time.NewTicker(monitorDP)
-	for {
-		select {
-		case <-timerListen2.C:
-			go func() {
+	go func() {
+		timerListen2 := time.NewTicker(monitorDP)
+		for {
+			select {
+			case <-timerListen2.C:
 				if userLimit >= 0 {
 					userCount := getUserStat()
 					Logger.Println("cur valid usr cnt -->", userCount)
@@ -167,9 +169,9 @@ func (service *Service) Manage() (string, error) {
 						gService.Stop()
 					}
 				}
-			}()
+			}
 		}
-	}
+	}()
 
 	// loop work cycle with accept interrupt by system signal
 	for {
