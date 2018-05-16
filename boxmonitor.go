@@ -181,6 +181,8 @@ func (service *Service) Manage() (string, error) {
 				Logger.Printf("interrupted by system signal,%s  was killed\n", ServiceName)
 				os.Exit(0)
 			}
+			Logger.Printf("%s  was killed\n", ServiceName)
+			os.Exit(0)
 		}
 	}
 }
