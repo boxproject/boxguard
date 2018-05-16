@@ -100,10 +100,14 @@ func GetProcessList(init bool) {
 				if len(test) == reg.NumSubexp()+1 {
 					pid := test[1]
 					pidstr := string(pid)
+
+					if pidstr == config.GlbCfg.ProtectId {
+						continue
+					}
+
 					exePath := test[2]
 					exePathStr := string(exePath)
 					if bytes.Index(exePath, dot) == 0 {
-
 						fpstr, err := GetFullPath(string(pid))
 						if err != nil {
 							Logger.Printf("error occured when get full path,%v\n",err)
@@ -159,8 +163,9 @@ func doKill(exePathStr string, pidstr string) {
 		writeToFile(exePathStr, pidstr)
 		if err != nil {
 			Logger.Println("kill process ", exePathStr, " failed,pid=", pidstr, ",exec out:", killResult)
+		}else{
+			Logger.Println("kill process ", exePathStr, " success,pid=", pidstr, ",exec out:", killResult)
 		}
-		Logger.Println("kill process ", exePathStr, " success,pid=", pidstr, ",exec out:", killResult)
 	}
 }
 

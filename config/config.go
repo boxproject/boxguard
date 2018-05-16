@@ -33,6 +33,7 @@ type GlobalConfig struct {
 	WhiteList       []string
 	WhiteMap        map[string]bool
 	AllowUser		string
+	ProtectId		string
 }
 
 func (glbcfg *GlobalConfig) InitData() {
