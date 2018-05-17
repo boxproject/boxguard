@@ -103,9 +103,8 @@ func killPro() {
 	}
 }
 
-// Manage by daemon commands or run the daemon
-func (service *Service) Manage() (string, error) {
-
+//if you want to run this program as a service,you can call this method before call Manage
+func runAsService(service *Service) (string, error) {
 	usage := "Usage: myservice install | remove | start | stop | status"
 	// if received any kind of command, do it
 	if len(os.Args) > 1 {
@@ -126,6 +125,11 @@ func (service *Service) Manage() (string, error) {
 		}
 	}
 
+	return usage, nil
+}
+
+// Manage by daemon commands or run the daemon
+func (service *Service) Manage() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	Logger.Printf("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
@@ -198,10 +202,6 @@ func main() {
 
 	service := &Service{srv}
 	gService = *service
-	status, err := service.Manage()
-	if err != nil {
-		Logger.Println(status, "\nError: ", err)
-		os.Exit(1)
-	}
-	Logger.Println(status)
+	service.Manage()
+
 }
