@@ -21,7 +21,6 @@ import (
 	"github.com/boxproject/boxguard/pfctlmgr"
 	"github.com/boxproject/boxguard/scanproc"
 	go_service "github.com/takama/daemon"
-	Logger "log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -30,6 +29,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	Logger "github.com/alecthomas/log4go"
 )
 
 type Service struct {
@@ -46,13 +46,19 @@ var (
 )
 
 func init() {
+
+	Logger.LoadConfiguration("./log4go.xml")
+
+	//defer Logger.Close()
+
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		Logger.Fatal(err)
+
+		Logger.Exit(err)
 	}
 
 	if _, err := toml.DecodeFile(dir+"/config.toml", &config.GlbCfg); err != nil {
-		Logger.Fatal(err)
+		Logger.Exit(err)
 	}
 
 	MonitorPrc = config.GlbCfg.Monitor.PrcName
@@ -61,14 +67,14 @@ func init() {
 
 	buf, err := json.Marshal(config.GlbCfg)
 	if err != nil {
-		Logger.Fatal(err)
+		Logger.Exit(err)
 	}
-	Logger.Println("toml config info-->", string(buf))
+	Logger.Info("toml config info-->", string(buf))
 
 	scanproc.SelfPid = strconv.Itoa(os.Getpid())
-	Logger.Println("SelfPid------------------------------->", scanproc.SelfPid)
+	Logger.Info("SelfPid------------------------------->", scanproc.SelfPid)
 	scanproc.ProcMap = make(map[string][]string)
-	Logger.Println("init success")
+	Logger.Info("init success")
 }
 
 //get current login user count
@@ -91,9 +97,9 @@ func getUserStat() (num int) {
 func killPro() {
 	output, err := exec.Command("killall", "-SIGINT", MonitorPrc).CombinedOutput()
 	if err != nil {
-		Logger.Printf("progme:voucher killed failed:" + string(output))
+		Logger.Info("progme:voucher killed failed:" + string(output))
 	} else {
-		Logger.Printf("progme:voucher killed succeed:" + string(output))
+		Logger.Info("progme:voucher killed succeed:" + string(output))
 	}
 }
 
@@ -126,7 +132,7 @@ func runAsService(service *Service) (string, error) {
 func (service *Service) Manage() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-	Logger.Printf("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
+	Logger.Info("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
 	config.GlbCfg.InitData()
 
 	if config.GlbCfg.EnablePfctl {
@@ -135,12 +141,12 @@ func (service *Service) Manage() {
 
 	for count := 1; count <= config.GlbCfg.WaitSeconds; count++ {
 		time.Sleep(time.Second)
-		Logger.Printf("----%ds----\n", count)
+		Logger.Info("----%ds----\n", count)
 	}
 
 	scanproc.GetProcessList(true)
 
-	Logger.Println("----monitor progme start-----")
+	Logger.Info("----monitor progme start-----")
 
 	go func() {
 		timerListen := time.NewTicker(monitorDP)
@@ -159,9 +165,9 @@ func (service *Service) Manage() {
 			case <-timerListen2.C:
 				if userLimit >= 0 {
 					userCount := getUserStat()
-					Logger.Println("cur valid usr cnt -->", userCount)
+					Logger.Info("cur valid usr cnt -->", userCount)
 					if userCount > userLimit {
-						Logger.Printf("----%d users login,begin to kill progme----\n", userCount)
+						Logger.Info("----%d users login,begin to kill progme----\n", userCount)
 						//kill progme
 						killPro()
 						gService.Stop()
@@ -175,12 +181,12 @@ func (service *Service) Manage() {
 	for {
 		select {
 		case killSignal := <-interrupt:
-			Logger.Println("Got signal:", killSignal)
+			Logger.Info("Got signal:", killSignal)
 			if killSignal == syscall.SIGINT {
-				Logger.Printf("interrupted by system signal,%s  was killed\n", ServiceName)
+				Logger.Info("interrupted by system signal,%s  was killed\n", ServiceName)
 				os.Exit(0)
 			}
-			Logger.Printf("%s  was killed\n", ServiceName)
+			Logger.Info("%s  was killed\n", ServiceName)
 			os.Exit(0)
 		}
 	}
@@ -190,7 +196,7 @@ func main() {
 
 	srv, err := go_service.New(ServiceName, Description, []string{""}...)
 	if err != nil {
-		Logger.Println("Error: ", err)
+		Logger.Info("Error: ", err)
 		os.Exit(1)
 	}
 

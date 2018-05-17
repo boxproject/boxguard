@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"github.com/boxproject/boxguard/config"
 	"io"
-	Logger "log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
+	Logger "github.com/alecthomas/log4go"
 )
 
 var (
@@ -55,9 +55,9 @@ func GetProcessList(init bool) {
 	}
 
 	if init {
-		Logger.Println("get process list begin,please wait for a moment")
+		Logger.Info("get process list begin,please wait for a moment")
 	}else{
-		Logger.Println("get process list again••••••••••••••")
+		Logger.Info("get process list again••••••••••••••")
 	}
 
 	timebg := time.Now().UnixNano()
@@ -72,12 +72,12 @@ func GetProcessList(init bool) {
 
 	reg, err := regexp.Compile("(\\d+).*?(\\.?/.*?)$")
 	if err != nil {
-		Logger.Printf("%v\n", err)
+		Logger.Info("%v\n", err)
 		return
 	}
 
 	if _, _, err = readerout.ReadLine(); err != nil {
-		Logger.Printf("read buffer failed. cause:%v\n",err)
+		Logger.Info("read buffer failed. cause:%v\n",err)
 		return
 	}
 
@@ -85,13 +85,13 @@ func GetProcessList(init bool) {
 		line, _, err := readerout.ReadLine()
 		if err != nil {
 			if io.EOF == err {
-				Logger.Printf("", )
+				Logger.Info("", )
 				timett := time.Now().UnixNano()-timebg
 
-				Logger.Printf("get process list end,current proc count:%d, cost  unix nano mills--> %v",len(ProcMap),timett)
+				Logger.Info("get process list end,current proc count:%d, cost  unix nano mills--> %v",len(ProcMap),timett)
 				return
 			}
-			Logger.Printf("read line failed. cause: %v\n", err)
+			Logger.Info("read line failed. cause: %v\n", err)
 			return
 		}
 
@@ -112,14 +112,14 @@ func GetProcessList(init bool) {
 					if bytes.Index(exePath, dot) == 0 {
 						fpstr, err := GetFullPath(string(pid))
 						if err != nil {
-							Logger.Printf("error occured when get full path,%v\n",err)
+							Logger.Info("error occured when get full path,%v\n",err)
 							continue
 						}
 
 						fields := strings.Fields(fpstr)
 						lenth := len(fields)
 						if lenth < 9 {
-							Logger.Printf("fpstr lenth less than 9,what is:%v\n",fpstr)
+							Logger.Info("fpstr lenth less than 9,what is:%v\n",fpstr)
 							continue
 						}
 						pidstr = fields[1]
@@ -127,7 +127,7 @@ func GetProcessList(init bool) {
 					}
 
 					if init {
-						Logger.Println("===============init proc-------->", exePathStr)
+						Logger.Info("===============init proc-------->", exePathStr)
 					}
 
 					//check if the proc already in memory,if not in kill
@@ -152,16 +152,16 @@ func GetProcessList(init bool) {
 func doKill(exePathStr string, pidstr string) {
 
 	if SelfPid != pidstr && !config.GlbCfg.InWhite(exePathStr) {
-		Logger.Println("====do kill==========for not in memory--------》", exePathStr)
+		Logger.Info("====do kill==========for not in memory--------》", exePathStr)
 		cmdstr := "kill -9 " + pidstr
 		killbuf, err := exec.Command("/bin/sh", "-c", cmdstr).CombinedOutput()
 
 		killResult := string(killbuf)
 		writeToFile(exePathStr, pidstr)
 		if err != nil {
-			Logger.Println("kill process ", exePathStr, " failed,pid=", pidstr, ",exec out:", killResult)
+			Logger.Info("kill process ", exePathStr, " failed,pid=", pidstr, ",exec out:", killResult)
 		}else{
-			Logger.Println("kill process ", exePathStr, " success,pid=", pidstr, ",exec out:", killResult)
+			Logger.Info("kill process ", exePathStr, " success,pid=", pidstr, ",exec out:", killResult)
 		}
 	}
 }
@@ -185,7 +185,7 @@ func GetFullPath(pid string) (string, error) {
 			if io.EOF == err {
 				return "", err
 			}
-			Logger.Printf("read line failed. cause: %v\n", err)
+			Logger.Info("read line failed. cause: %v\n", err)
 			return "", err
 		}
 		return string(line), nil

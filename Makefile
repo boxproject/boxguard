@@ -17,6 +17,7 @@ build:
 	go build -o build/bin/boxgd
 	cp config.toml build/bin
 	cp etc/pf.conf build/bin
+	cp log4go.xml  build/bin
 
 clean:
 	rm -rf build

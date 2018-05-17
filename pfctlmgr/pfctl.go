@@ -15,10 +15,10 @@
 package pfctlmgr
 
 import (
-	Logger "log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	Logger "github.com/alecthomas/log4go"
 )
 
 
@@ -27,39 +27,39 @@ func InitPfctl() {
 	pfconfPath := "./pf.conf"
 	_, err := os.Open(pfconfPath)
 	if err != nil {
-		Logger.Print("init pf.conf failed",err)
+		Logger.Info("init pf.conf failed",err)
 	}
 
 	output, err := exec.Command("/bin/sh", "-c", "pfctl -e").CombinedOutput()
 	rt := string(output)
 	if err != nil {
-		Logger.Printf("progme:pfctl start failed:%s", rt)
+		Logger.Info("progme:pfctl start failed:%s", rt)
 	} else {
-		Logger.Printf("progme:pfctl start success:%s", rt)
+		Logger.Info("progme:pfctl start success:%s", rt)
 	}
 
 
 	execPath, err := exec.LookPath(os.Args[0])
 	if err != nil {
-		Logger.Println("get exec path error:",err)
+		Logger.Info("get exec path error:",err)
 	}
-	Logger.Println("exec path :",execPath)
+	Logger.Info("exec path :",execPath)
 	execDir := filepath.Dir(execPath)
 	if execDir == "." {
 		execDir, err = os.Getwd()
 		if err != nil {
-			Logger.Println("get file path error:",err)
+			Logger.Info("get file path error:",err)
 		}
 	}
 
-	Logger.Println("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execPath)
+	Logger.Info("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execPath)
 
 
 	output, err = exec.Command("/bin/sh", "-c","pfctl -f "+execDir+"/pf.conf").CombinedOutput()
 	if err != nil {
-		Logger.Printf("progme:pfctl reload rules failed:%s" , string(output))
+		Logger.Info("progme:pfctl reload rules failed:%s" , string(output))
 	} else {
-		Logger.Printf("progme:pfctl reload rules success:%s" , string(output))
+		Logger.Info("progme:pfctl reload rules success:%s" , string(output))
 	}
 
 
