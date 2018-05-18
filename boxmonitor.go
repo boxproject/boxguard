@@ -15,8 +15,9 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 	"github.com/BurntSushi/toml"
+	Logger "github.com/alecthomas/log4go"
 	"github.com/boxproject/boxguard/config"
 	"github.com/boxproject/boxguard/pfctlmgr"
 	"github.com/boxproject/boxguard/scanproc"
@@ -25,11 +26,11 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
-	Logger "github.com/alecthomas/log4go"
+	"encoding/json"
+	"strconv"
 )
 
 type Service struct {
@@ -47,15 +48,15 @@ var (
 
 func init() {
 
-	Logger.LoadConfiguration("./log4go.xml")
 
-	//defer Logger.Close()
 
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 
 		Logger.Exit(err)
 	}
+
+	Logger.LoadConfiguration(dir+"/log4go.xml")
 
 	if _, err := toml.DecodeFile(dir+"/config.toml", &config.GlbCfg); err != nil {
 		Logger.Exit(err)
@@ -65,16 +66,7 @@ func init() {
 	userLimit = config.GlbCfg.Monitor.Users
 	monitorDP = time.Duration(int(time.Second) / config.GlbCfg.Monitor.Frames)
 
-	buf, err := json.Marshal(config.GlbCfg)
-	if err != nil {
-		Logger.Exit(err)
-	}
-	Logger.Info("toml config info-->", string(buf))
 
-	scanproc.SelfPid = strconv.Itoa(os.Getpid())
-	Logger.Info("SelfPid------------------------------->", scanproc.SelfPid)
-	scanproc.ProcMap = make(map[string][]string)
-	Logger.Info("init success")
 }
 
 //get current login user count
@@ -103,8 +95,22 @@ func killPro() {
 	}
 }
 
-//if you want to run this program as a service,you can call this method before call Manage
-func runAsService(service *Service) (string, error) {
+func printInitInfo()  {
+	buf, err := json.Marshal(config.GlbCfg)
+	if err != nil {
+		Logger.Exit(err)
+	}
+
+	scanproc.SelfPid = strconv.Itoa(os.Getpid())
+	scanproc.ProcMap = make(map[string][]string)
+	Logger.Info("toml config info-->", string(buf))
+	Logger.Info("SelfPid------------------------------->", scanproc.SelfPid)
+	Logger.Info("init success")
+}
+
+// Manage by daemon commands or run the daemon
+func (service *Service) Manage() (string, error) {
+
 	usage := "Usage: myservice install | remove | start | stop | status"
 	// if received any kind of command, do it
 	if len(os.Args) > 1 {
@@ -125,11 +131,14 @@ func runAsService(service *Service) (string, error) {
 		}
 	}
 
-	return usage, nil
-}
+	printInitInfo()
 
-// Manage by daemon commands or run the daemon
-func (service *Service) Manage() {
+	vouchb := lookForVoucher(config.GlbCfg.ProtectId)
+	if !vouchb {
+		fmt.Println("vouch not found,pid-->%s", config.GlbCfg.ProtectId)
+		gService.Stop()
+	}
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	Logger.Info("----after %ds monitor progme will work-----\n", config.GlbCfg.WaitSeconds, ",pid=", os.Getpid())
@@ -199,9 +208,43 @@ func main() {
 		Logger.Info("Error: ", err)
 		os.Exit(1)
 	}
-
 	service := &Service{srv}
 	gService = *service
-	service.Manage()
 
+	status,err := service.Manage()
+
+	if err != nil {
+		fmt.Printf("error:%v\n",err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("run as service status-->%s\n", status)
+}
+
+func lookForVoucher(pidstr string) bool {
+	//pidstr := "32439"
+	cmdstr := fmt.Sprintf("ps -p %s", pidstr)
+	killbuf, err := exec.Command("/bin/sh", "-c", cmdstr).CombinedOutput()
+	if err != nil {
+		Logger.Info(err)
+		return false
+	}
+	killResult := strings.TrimSpace(string(killbuf))
+	for _, line := range strings.Split(killResult, "\n")[:] {
+		fields := strings.Fields(line)
+		fieldsMinLen := 1
+		lens := len(fields)
+		if lens < fieldsMinLen {
+			continue
+		}
+
+		temp := fields[0]
+
+		if pidstr == temp {
+			return true
+		}
+	}
+
+	Logger.Info(killResult)
+	return false
 }
