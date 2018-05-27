@@ -19,50 +19,49 @@ import (
 	"os/exec"
 	"path/filepath"
 	Logger "github.com/alecthomas/log4go"
+	"strings"
 )
 
 
-
 func InitPfctl() {
-	pfconfPath := "./pf.conf"
-	_, err := os.Open(pfconfPath)
+
+	//output, err := exec.Command("/bin/sh", "-c", "pfctl -e").CombinedOutput()
+	//rt := string(output)
+	//if err != nil {
+	//	Logger.Info("progme:pfctl start failed:%s", rt)
+	//} else {
+	//	Logger.Info("progme:pfctl start success:%s", rt)
+	//}
+
+	//execPath, err := exec.LookPath(os.Args[0])
+	//if err != nil {
+	//	Logger.Info("get exec path error:",err)
+	//}
+	//Logger.Info("exec path :",execPath)
+	//execDir := filepath.Dir(execPath)
+	//if execDir == "." {
+	//	execDir, err = os.Getwd()
+	//	if err != nil {
+	//		Logger.Info("get file path error:",err)
+	//	}
+	//}
+
+	//Logger.Info("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execDir+"/pf.conf")
+
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		Logger.Info("init pf.conf failed",err)
+		Logger.Error("get file path error",err)
 	}
+	execDir := strings.Replace(dir, "\\", "/", -1)
 
-	output, err := exec.Command("/bin/sh", "-c", "pfctl -e").CombinedOutput()
-	rt := string(output)
-	if err != nil {
-		Logger.Info("progme:pfctl start failed:%s", rt)
-	} else {
-		Logger.Info("progme:pfctl start success:%s", rt)
-	}
+	Logger.Info("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execDir+"/pf.conf")
 
 
-	execPath, err := exec.LookPath(os.Args[0])
-	if err != nil {
-		Logger.Info("get exec path error:",err)
-	}
-	Logger.Info("exec path :",execPath)
-	execDir := filepath.Dir(execPath)
-	if execDir == "." {
-		execDir, err = os.Getwd()
-		if err != nil {
-			Logger.Info("get file path error:",err)
-		}
-	}
-
-	Logger.Info("execpath~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~:",execPath)
-
-
-	output, err = exec.Command("/bin/sh", "-c","pfctl -f "+execDir+"/pf.conf").CombinedOutput()
+	output, err := exec.Command("/bin/sh", "-c","pfctl -ef "+execDir+"/pf.conf").CombinedOutput()
 	if err != nil {
 		Logger.Info("progme:pfctl reload rules failed:%s" , string(output))
 	} else {
 		Logger.Info("progme:pfctl reload rules success:%s" , string(output))
 	}
-
-
-
 
 }
